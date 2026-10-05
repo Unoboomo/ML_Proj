@@ -1,12 +1,18 @@
-export function calculateSVD(theta1Deg, sigmaX, sigmaY, theta2Deg) {
-	const rad1 = (theta1Deg * Math.PI) / 180;
-	const rad2 = (theta2Deg * Math.PI) / 180;
+export function calculateSVD(
+	// V^T parameters
+	vIsReflection, // boolean: false = Rotation, true = Reflection
+	vAngleDeg, // theta if rotation, phi (line angle) if reflection
 
-	// V^T (First rotation)
-	const VT = [
-		[Math.cos(rad1), -Math.sin(rad1)],
-		[Math.sin(rad1), Math.cos(rad1)]
-	];
+	// Sigma parameters (Axis scaling)
+	sigmaX, // scale along X-axis
+	sigmaY, // scale along Y-axis
+
+	// U parameters
+	uIsReflection, // boolean: false = Rotation, true = Reflection
+	uAngleDeg // theta if rotation, phi (line angle) if reflection
+) {
+	// V^T (First rotation/reflection)
+	const VT = computeOrthogonalMatrix(vIsReflection, vAngleDeg);
 
 	// Sigma (Scaling)
 	const Sigma = [
@@ -14,11 +20,8 @@ export function calculateSVD(theta1Deg, sigmaX, sigmaY, theta2Deg) {
 		[0, sigmaY]
 	];
 
-	// U (Second rotation)
-	const U = [
-		[Math.cos(rad2), -Math.sin(rad2)],
-		[Math.sin(rad2), Math.cos(rad2)]
-	];
+	// U (Second rotation/reflection)
+	const U = computeOrthogonalMatrix(uIsReflection, uAngleDeg);
 
 	// --- SVT = Sigma * VT ---
 	const SVT = [
@@ -39,4 +42,26 @@ export function calculateSVD(theta1Deg, sigmaX, sigmaY, theta2Deg) {
 	];
 
 	return { VT, Sigma, U, M };
+}
+
+function computeOrthogonalMatrix(isReflection, angleDeg) {
+	if (!isReflection) {
+		// Pure Rotation by vAngleDeg
+		const rad = (angleDeg * Math.PI) / 180;
+		return [
+			[Math.cos(rad), -Math.sin(rad)],
+			[Math.sin(rad), Math.cos(rad)]
+		];
+	} else {
+		// Reflection across line at angle vAngleDeg
+		const rad2 = (2 * angleDeg * Math.PI) / 180;
+		return [
+			[Math.cos(rad2), Math.sin(rad2)],
+			[Math.sin(rad2), -Math.cos(rad2)]
+		];
+	}
+}
+
+export function formatMatrix(matrix, decimals = 2) {
+	return matrix.map((row) => row.map((val) => Number(val.toFixed(decimals))));
 }
