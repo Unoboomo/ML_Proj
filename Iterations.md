@@ -16,3 +16,10 @@
 - **Solution:** Expanded $U$ and $V^T$ to support reflections. Introduced $\phi$ and a reflection flag to handle reflections across any line passing through the origin at angle $\phi$:
   $$R_\phi = \begin{bmatrix} \cos(2\phi) & \sin(2\phi) \\ \sin(2\phi) & -\cos(2\phi) \end{bmatrix}$$
 - **Engine Implementation:** Updated `calculateSVD` to allow for rotations and reflections, and added helper functions to handle matrix formatting and $U$ and $V^T$ matrix calculations
+
+## Iteration 3: Codebase Modularization & Component Architecture
+
+- **Goal:** trying to get this to work
+- **Implementation:**
+  1. **IT DOESNT WORK** the sliders show up to change the matrix, and the svd components are working fine, but the vector isnt animating and idk why.
+  2. **Created matrix to svd function**

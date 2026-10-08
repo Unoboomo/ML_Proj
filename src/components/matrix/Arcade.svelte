@@ -31,7 +31,7 @@
 		inputVectorToggled,
 		rgbShiftEnabled,
 		resetViewToggle,
-    show2d
+		show2d
 	} from "$stores";
 	import Vector from "./Vector.svelte";
 	import { ScrollTrigger, gsap } from "$utils/gsap.js";
@@ -1607,7 +1607,7 @@
 						stProps.onEnter();
 
 						$show3d = true;
-            $show2d = false
+						$show2d = false;
 						basisAltProps.zVisible = false;
 
 						// // Update matrix transform
@@ -1631,7 +1631,7 @@
 						stProps.onLeaveBack();
 
 						$show3d = false;
-            $show2d = true
+						$show2d = true;
 						$grid3dToggled = false;
 
 						$inputVectorToggled = false;

@@ -21,7 +21,7 @@
 	import { gsap, ScrollTrigger } from "$utils/gsap.js";
 	import { onMount } from "svelte";
 	import { arcadeMounted } from "$stores";
-
+	import MatDecomp from "./MatDecomp.svelte";
 	// let mounted;
 
 	// $: if (mounted && $arcadeMounted) animate();
@@ -35,19 +35,19 @@
 	// 		let animation;
 
 	// 		if (el.className === "exclude") {
-  //       animation = gsap.timeline({ paused: true })
-  //         .from(el, {
-  //           opacity: 0,
-  //           y: 100,
-  //           duration: 0.6
-  //         })
-  //         .from(el.querySelectorAll('li'), {
-  //           x: -40,
-  //           opacity: 0,
-  //           stagger: {
-  //             amount: 0.3
-  //           }
-  //         })
+	//       animation = gsap.timeline({ paused: true })
+	//         .from(el, {
+	//           opacity: 0,
+	//           y: 100,
+	//           duration: 0.6
+	//         })
+	//         .from(el.querySelectorAll('li'), {
+	//           x: -40,
+	//           opacity: 0,
+	//           stagger: {
+	//             amount: 0.3
+	//           }
+	//         })
 	// 		} else {
 	// 			animation = gsap.from(el, {
 	// 				opacity: 0,
@@ -243,6 +243,12 @@
 				</ul>
 			</Action>
 		</div>
+
+		<!-- <Spacer /> -->
+
+		<section class="my-8">
+			<MatDecomp />
+		</section>
 	</Section>
 
 	<!-- TODO: How about 3D? -->
@@ -282,11 +288,11 @@
 		</P>
 
 		<P id="st-12">
-			From these visually-focused examples we've seen thus far, the most obvious application
-			of matrix transformations would be that of computer graphics. In fact,
-			this is precisely how this article was built! Matrices provide a language
-			to rotate, scale and translate vectors and points and consequently entire
-			objects in 2D or 3D space.
+			From these visually-focused examples we've seen thus far, the most obvious
+			application of matrix transformations would be that of computer graphics.
+			In fact, this is precisely how this article was built! Matrices provide a
+			language to rotate, scale and translate vectors and points and
+			consequently entire objects in 2D or 3D space.
 		</P>
 
 		<!-- <p>
