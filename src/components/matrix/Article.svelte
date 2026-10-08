@@ -21,7 +21,6 @@
 	import { gsap, ScrollTrigger } from "$utils/gsap.js";
 	import { onMount } from "svelte";
 	import { arcadeMounted } from "$stores";
-	import MatDecomp from "./MatDecomp.svelte";
 	// let mounted;
 
 	// $: if (mounted && $arcadeMounted) animate();
@@ -243,12 +242,6 @@
 				</ul>
 			</Action>
 		</div>
-
-		<!-- <Spacer /> -->
-
-		<section class="my-8">
-			<MatDecomp />
-		</section>
 	</Section>
 
 	<!-- TODO: How about 3D? -->
