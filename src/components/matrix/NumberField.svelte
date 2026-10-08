@@ -1,13 +1,15 @@
 <script>
 	// A text box for numbers.
-	// - Applies live on every valid keystroke ("-", "1." etc. are ignored until valid)
-	// - Shows the value rounded when idle, exactly what you typed while editing
-	// - ArrowUp/ArrowDown step the value (Shift = x10, Alt = x0.1)
+	// - Typing only edits a draft. Enter applies it.
+	// - Escape, or clicking away, throws the draft away.
+	// - ArrowUp/ArrowDown step the value and apply right away
+	//   (Shift = x10, Alt = x0.1)
 	export let value = 0;
 	export let decimals = 2;
 	export let step = 0.1;
 	export let style = "";
 	export let label = "";
+	export let big = false;
 
 	let editing = false;
 	let draft = "";
@@ -17,6 +19,7 @@
 	const fmt = (n) => (Number.isFinite(n) ? clean(n).toFixed(decimals) : "");
 
 	$: shown = editing ? draft : fmt(value);
+	$: pending = editing && draft !== fmt(value);
 
 	function onFocus(e) {
 		editing = true;
@@ -24,14 +27,18 @@
 		e.currentTarget.select();
 	}
 
-	function onInput(e) {
-		draft = e.currentTarget.value;
+	function commit() {
 		const n = Number(draft);
 		if (draft.trim() !== "" && Number.isFinite(n)) value = n;
 	}
 
 	function onKeydown(e) {
 		if (e.key === "Enter") {
+			commit();
+			e.currentTarget.blur();
+			return;
+		}
+		if (e.key === "Escape") {
 			e.currentTarget.blur();
 			return;
 		}
@@ -52,25 +59,37 @@
 	autocomplete="off"
 	spellcheck="false"
 	class="field"
+	class:big
+	class:pending
+	title={pending ? "Enter to apply, Esc to cancel" : ""}
 	aria-label={label}
 	{style}
 	value={shown}
 	on:focus={onFocus}
 	on:blur={() => (editing = false)}
-	on:input={onInput}
+	on:input={(e) => (draft = e.currentTarget.value)}
 	on:keydown={onKeydown}
 />
 
 <style lang="postcss">
 	.field {
 		@apply w-24 bg-base-200 px-2 py-2 text-right text-lg tabular-nums transition-colors selection:text-inherit;
+	}
 
-		&:hover {
-			@apply bg-base-100;
-		}
+	.field.big {
+		@apply w-32 py-1 text-3xl;
+	}
 
-		&:focus {
-			@apply bg-base-100 outline-none ring-1 ring-inset ring-info;
-		}
+	.field:hover {
+		@apply bg-base-100;
+	}
+
+	.field:focus {
+		@apply bg-base-100 outline-none ring-1 ring-inset ring-info;
+	}
+
+	/* Typed but not applied yet */
+	.field.pending {
+		@apply ring-1 ring-inset ring-warning;
 	}
 </style>
