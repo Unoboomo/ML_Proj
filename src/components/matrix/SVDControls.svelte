@@ -8,13 +8,15 @@
 	} from "$utils/svd";
 
 	// The scene tweens #inputs with a CSS transform, and a transformed ancestor
-	// turns `position: fixed` into "fixed relative to that ancestor". So this
-	// moves itself out to <body> (or to the element carrying data-theme, so the
-	// daisyUI colors still apply) and pins to the real viewport.
+	// turns `position: fixed` into "fixed relative to that ancestor". So the
+	// panel moves itself out to <body> (or to the element carrying data-theme,
+	// so the daisyUI colors still apply) and pins to the real viewport corner.
 	function portal(node) {
 		const themed = document.querySelector("[data-theme]");
 		const host =
-			themed && themed !== document.documentElement ? themed : document.body;
+			themed && themed !== document.documentElement
+				? themed
+				: document.body;
 		host.appendChild(node);
 		return { destroy: () => node.remove() };
 	}
@@ -90,221 +92,202 @@
 	$: syncFromMatrix($endMatrix); // must stay above applyControls
 	$: applyControls(factors, sigma);
 
-	// What gets displayed
+	// Read-only view of the actual matrices
 	$: A = flat2d($endMatrix);
 	$: mats = decompose(factors, sigma);
-
+	$: shown = {
+		u: mats.U.flat(),
+		s: mats.Sigma.flat(),
+		v: mats.VT.flat()
+	};
 	const fmt = (n) => (Math.abs(n) < 0.005 ? 0 : n).toFixed(2);
-	const deg = (n) => (Math.abs(n) < 0.05 ? 0 : n).toFixed(1);
 
 	const parts = [
-		{ key: "u", label: "U", order: "applied 3rd", color: "p" },
-		{ key: "s", label: "Σ", order: "applied 2nd", color: "s" },
-		{ key: "v", label: "Vᵀ", order: "applied 1st", color: "a" }
+		{ key: "u", label: "U", note: "turns last", color: "p" },
+		{ key: "s", label: "Σ", note: "stretches", color: "s" },
+		{ key: "v", label: "Vᵀ", note: "turns first", color: "a" }
 	];
 </script>
 
 {#if visible}
 	<div
 		use:portal
-		class="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-start px-4"
+		class="pointer-events-auto fixed bottom-4 left-4 z-50 max-w-[calc(100vw-2rem)] overflow-x-auto bg-base-100/85 p-3 font-serif text-base-content backdrop-blur-sm"
+		transition:fly={{ duration: 200, x: -30 }}
 	>
-		<div
-			class="panel pointer-events-auto max-w-full overflow-x-auto bg-base-200 px-8 py-5 font-serif shadow-lg shadow-neutral-content/20"
-			transition:fly={{ duration: 250, x: -30 }}
-		>
-			<div class="eq">
-				<!-- Row 1: names -->
-				<div class="name">A</div>
-				<div />
-				{#each parts as part (part.key)}
-					<div class="name" style="color: hsl(var(--{part.color}))">
-						{part.label}
-					</div>
-				{/each}
-
-				<!-- Row 2: A = U Σ Vᵀ -->
-				<div class="bracket">
+		<div class="eq">
+			<!-- Row 1: A = U Σ Vᵀ -->
+			<div class="shadow-lg shadow-neutral-content/20">
+				<div class="brackets">
 					<div class="cells">
 						{#each A as v, i (i)}
-							<span class="cell">{fmt(v)}</span>
+							<span class="cell"><span>{fmt(v)}</span></span>
 						{/each}
 					</div>
 				</div>
-				<div class="equals">=</div>
-				{#each parts as part (part.key)}
-					<div class="bracket" style="color: hsl(var(--{part.color}))">
-						<div class="cells">
-							{#if part.key === "s"}
-								<NumberField
-									big
-									bind:value={sigma[0]}
-									decimals={2}
-									step={0.1}
-									label="x scale"
-								/>
-								<span class="cell zero">0</span>
-								<span class="cell zero">0</span>
-								<NumberField
-									big
-									bind:value={sigma[1]}
-									decimals={2}
-									step={0.1}
-									label="y scale"
-								/>
-							{:else}
-								{#each (part.key === "u" ? mats.U : mats.VT).flat() as v, i (i)}
-									<span class="cell">{fmt(v)}</span>
-								{/each}
-							{/if}
-						</div>
-					</div>
-				{/each}
-
-				<!-- Row 3: controls -->
-				<div />
-				<div />
-				{#each parts as part (part.key)}
-					{#if part.key === "s"}
-						<div />
-					{:else}
-						<div
-							class="flex flex-col items-center gap-1"
-							style="color: hsl(var(--{part.color}))"
-						>
-							<div class="flex items-center gap-1">
-								<span class="text-sm opacity-60">
-									{factors[part.key].refl ? "mirror line" : "angle"}
-								</span>
-								<NumberField
-									bind:value={factors[part.key].angle}
-									decimals={1}
-									step={1}
-									label="{part.label} angle in degrees"
-								/>
-								<span class="text-lg">°</span>
-							</div>
-							<button
-								class="btn btn-ghost btn-xs"
-								title={factors[part.key].refl
-									? "Reflecting across a line at this angle. Click to rotate instead."
-									: "Rotating by this angle. Click to reflect across a line at this angle instead."}
-								on:click={() =>
-									(factors[part.key].refl = !factors[part.key].refl)}
-							>
-								switch to {factors[part.key].refl ? "rotation" : "reflection"}
-							</button>
-						</div>
-					{/if}
-				{/each}
-
-				<!-- Row 4: captions -->
-				<div class="caption">
-					<span>transformation</span>
-					<span>the matrix you edit</span>
-				</div>
-				<div />
-				{#each parts as part (part.key)}
-					<div class="caption" style="color: hsl(var(--{part.color}))">
-						<span>{part.order}</span>
-						{#if part.key === "s"}
-							<span>
-								stretches x by {fmt(sigma[0])}, y by {fmt(sigma[1])}
-								{#if sigma[0] < 0 || sigma[1] < 0}
-									(a negative value flips that axis)
-								{/if}
-							</span>
-						{:else}
-							<span>
-								{factors[part.key].refl
-									? "reflects across the line at"
-									: "rotates by"}
-								{deg(factors[part.key].angle)}°
-							</span>
-						{/if}
-					</div>
-				{/each}
 			</div>
+			<div class="equals">=</div>
+			{#each parts as part (part.key)}
+				<div class="shadow-lg shadow-neutral-content/20">
+					<div class="brackets" style="color: hsl(var(--{part.color}))">
+						<div class="cells">
+							{#each shown[part.key] as v, i (i)}
+								<span class="cell">
+									<span
+										class:zero={part.key === "s" && (i === 1 || i === 2)}
+									>
+										{fmt(v)}
+									</span>
+								</span>
+							{/each}
+						</div>
+					</div>
+				</div>
+			{/each}
+
+			<!-- Row 2: controls under their matrix -->
+			<div />
+			<div />
+			{#each parts as part (part.key)}
+				<div class="controls" style="color: hsl(var(--{part.color}))">
+					{#if part.key === "s"}
+						<div class="field-row">
+							<span>x scale</span>
+							<NumberField
+								bind:value={sigma[0]}
+								decimals={2}
+								step={0.1}
+								label="x scale"
+							/>
+						</div>
+						<div class="field-row">
+							<span>y scale</span>
+							<NumberField
+								bind:value={sigma[1]}
+								decimals={2}
+								step={0.1}
+								label="y scale"
+							/>
+						</div>
+					{:else}
+						<div class="field-row">
+							<span>{factors[part.key].refl ? "mirror line" : "angle"}</span>
+							<NumberField
+								bind:value={factors[part.key].angle}
+								decimals={1}
+								step={1}
+								label="{part.label} angle in degrees"
+							/>
+							<span class="text-lg">°</span>
+						</div>
+						<button
+							class="btn btn-ghost btn-xs"
+							title={factors[part.key].refl
+								? "Reflecting across a line at this angle. Click to rotate instead."
+								: "Rotating by this angle. Click to reflect across a line at this angle instead."}
+							on:click={() =>
+								(factors[part.key].refl = !factors[part.key].refl)}
+						>
+							⇄ {factors[part.key].refl ? "reflection" : "rotation"}
+						</button>
+					{/if}
+				</div>
+			{/each}
+
+			<!-- Row 3: labels -->
+			<div class="label">
+				<span class="name">A</span>
+				<span class="note">output</span>
+			</div>
+			<div />
+			{#each parts as part (part.key)}
+				<div class="label">
+					<span class="name" style="color: hsl(var(--{part.color}))">
+						{part.label}
+					</span>
+					<span class="note">{part.note}</span>
+				</div>
+			{/each}
+		</div>
+
+		<div class="mt-2 flex flex-col gap-1 text-sm">
+			<p>A = U Σ Vᵀ, applied right to left: Vᵀ, then Σ, then U.</p>
+			<p>
+				Type a value and press <kbd class="kbd kbd-sm">Enter</kbd> to confirm,
+				<kbd class="kbd kbd-sm">Esc</kbd> to cancel.
+			</p>
+			<p>
+				Click <b>rotation</b> / <b>reflection</b> under U or Vᵀ to switch
+				between them.
+			</p>
 		</div>
 	</div>
 {/if}
 
 <style lang="postcss">
-	/* Same inset outline as the matrix boxes */
-	.panel {
-		box-shadow: inset 0px 0px 0px 3px white;
-	}
-
-	/* Five columns: A, =, U, Σ, Vᵀ; four rows: name, matrix, controls, caption */
+	/* Columns: A, =, U, Σ, Vᵀ. Rows: matrices, controls, labels */
 	.eq {
 		display: grid;
 		grid-template-columns: repeat(5, auto);
-		column-gap: 1.5rem;
-		row-gap: 0.6rem;
+		column-gap: 1.25rem;
+		row-gap: 0.5rem;
 		align-items: center;
 		justify-items: center;
 	}
 
-	.name {
-		@apply text-2xl font-black;
-	}
-
-	.equals {
-		@apply text-4xl font-black;
-	}
-
-	/* Matrix brackets, drawn with borders */
-	.bracket {
-		position: relative;
-		padding: 0.35rem 1.1rem;
-	}
-	.bracket::before,
-	.bracket::after {
-		content: "";
-		position: absolute;
-		top: 0;
-		bottom: 0;
-		width: 0.6rem;
-		border: 3px solid currentColor;
-	}
-	.bracket::before {
-		left: 0;
-		border-right: none;
-	}
-	.bracket::after {
-		right: 0;
-		border-left: none;
+	/*
+	 * Bracket look, same trick as the matrix inputs: the white inset outline is
+	 * only visible in the side padding (the corner ticks and the vertical bars),
+	 * because the opaque cells cover it everywhere else.
+	 */
+	.brackets {
+		@apply bg-base-200;
+		padding: 0 0.75rem;
+		box-shadow: inset 0px 0px 0px 3px white;
 	}
 
 	.cells {
 		display: grid;
 		grid-template-columns: repeat(2, auto);
-		column-gap: 1rem;
-		row-gap: 0.25rem;
-		align-items: center;
-		justify-items: end;
 	}
 
 	.cell {
-		@apply text-3xl tabular-nums;
-		min-width: 4.5rem;
-		text-align: right;
+		@apply bg-base-200 px-2 py-2 text-right text-xl tabular-nums;
+		min-width: 4.25rem;
 	}
 
-	/* Matches the width of a big NumberField (w-32) */
+	/* off-diagonal zeros of Σ (dim the text only, never the opaque cell) */
 	.zero {
-		min-width: 8rem;
-		opacity: 0.3;
+		opacity: 0.55;
 	}
 
-	.caption {
-		@apply flex flex-col items-center text-center text-sm leading-tight;
-		max-width: 12rem;
+	.equals {
+		@apply text-3xl font-black;
 	}
-	.caption span:first-child {
-		@apply font-bold;
+
+	.controls {
+		@apply flex flex-col items-center gap-1;
 	}
-	.caption span:last-child {
-		@apply opacity-70;
+
+	.field-row {
+		@apply flex items-center gap-2 text-sm font-bold;
+	}
+
+	/* give the inputs a visible edge now that they sit outside the matrix boxes */
+	.field-row :global(.field) {
+		box-shadow: inset 0px 0px 0px 1px hsl(var(--bc) / 0.4);
+	}
+
+	.label {
+		@apply flex flex-col items-center text-center leading-tight;
+	}
+
+	.name {
+		@apply text-lg font-black;
+	}
+
+	.note {
+		@apply text-sm;
+		color: hsl(var(--bc));
 	}
 </style>
